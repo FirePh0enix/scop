@@ -1,0 +1,6 @@
+*.o
+*.d
+*.a
+scop
+gmon.out
+profile.txt
