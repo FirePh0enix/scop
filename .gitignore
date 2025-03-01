@@ -4,3 +4,7 @@
 scop
 gmon.out
 profile.txt
+
+# Zig
+.zig-cache
+zig-out
