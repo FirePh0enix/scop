@@ -8,6 +8,7 @@ const Vector2 = math.Vector2;
 const Vector3 = math.Vector3;
 const Vector4 = math.Vector4;
 const Mesh = @import("Mesh.zig");
+const Texture = @import("Texture.zig");
 const Graphics = @This();
 
 /// Internal structure used by the MiniLibX to store images
@@ -71,6 +72,8 @@ view: Matrix4,
 projection: Matrix4,
 /// The Model-View-Projection matrix.
 mvp: Matrix4,
+
+render_mode: Mode = .texture,
 
 pub fn init(
     mlx_ptr: ?*anyopaque,
@@ -189,7 +192,7 @@ inline fn interpolateScalar(v0: Vector3, v1: Vector3, v2: Vector3, w: Vector3, z
     return (w.x * v0.x + w.y * v1.x + w.z * v2.x) * z;
 }
 
-pub fn draw(self: *const Graphics, mesh: *const Mesh) void {
+pub fn draw(self: *const Graphics, mesh: *const Mesh, texture: *const Texture) void {
     const width: f32 = @floatFromInt(self.width);
     const height: f32 = @floatFromInt(self.height);
 
@@ -289,8 +292,8 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh) void {
                 const inv_z = 1.0 / z;
                 const w = Vector3{ .x = w0, .y = w1, .z = w2 };
 
-                // const uv = interpolateVector2(t0, t1, t2, w, inv_z);
-                // const n = interpolateVector3(n0, n1, n2, w, inv_z);
+                const uv = interpolateVector2(t0, t1, t2, w, inv_z);
+                const n = interpolateVector3(n0, n1, n2, w, inv_z);
 
                 const index: usize = x + (self.height - y - 1) * self.width;
                 const rev_z = 1.0 - z;
@@ -298,16 +301,30 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh) void {
                 if (rev_z > self.depth_buffer[index])
                     continue;
 
-                // TODO: call the shader.
-                // _ = uv;
-                // _ = n;
-
-                _ = inv_z;
-                _ = w;
-
-                self.color_buffer[index] = Color.white;
+                self.color_buffer[index] = fragmentShader(self.render_mode, uv, n, texture);
                 self.depth_buffer[index] = rev_z;
             }
         }
     }
+}
+
+const Mode = enum {
+    color,
+    texture,
+};
+
+inline fn fragmentShader(
+    mode: Mode,
+    uv: Vector2,
+    normal: Vector3,
+    texture: *const Texture,
+) Color {
+    _ = normal;
+
+    const color = switch (mode) {
+        .texture => texture.sample(uv),
+        .color => Color.white,
+    };
+
+    return color;
 }

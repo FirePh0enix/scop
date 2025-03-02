@@ -21,21 +21,10 @@ faces: ArrayList(Face),
 
 allocator: Allocator,
 
-fn readFace(buf: []const u8, faces: *ArrayList(Face)) !void {
-    var splitIter = std.mem.splitAny(u8, buf, " ");
-    const s0 = splitIter.next() orelse return error.InvalidLine;
-    const s1 = splitIter.next() orelse return error.InvalidLine;
-    const s2 = splitIter.next() orelse return error.InvalidLine;
-    const s3 = splitIter.next();
-
-    // TODO: lets handle this later.
-    // face1 => 0, 1, 2
-    // face2 => 1, 2, 3
-    std.debug.assert(s3 == null);
-
+fn readFace2(nums: []const []const u8) !Face {
     var face: Face = undefined;
 
-    for (&[3][]const u8{ s0, s1, s2 }, 0..3) |s, index| {
+    for (nums, 0..3) |s, index| {
         var slashIter = std.mem.splitAny(u8, s, "/");
         const sv = slashIter.next() orelse return error.InvalidLine; // minimum required (vertex index).
         const svt = slashIter.next();
@@ -60,12 +49,26 @@ fn readFace(buf: []const u8, faces: *ArrayList(Face)) !void {
         }
     }
 
-    try faces.append(face);
+    return face;
+}
+
+fn readFace(buf: []const u8, faces: *ArrayList(Face)) !void {
+    var splitIter = std.mem.splitAny(u8, buf, " ");
+    const s0 = splitIter.next() orelse return error.InvalidLine;
+    const s1 = splitIter.next() orelse return error.InvalidLine;
+    const s2 = splitIter.next() orelse return error.InvalidLine;
+
+    if (splitIter.next()) |s3| {
+        try faces.append(try readFace2(&[3][]const u8{ s0, s1, s2 }));
+        try faces.append(try readFace2(&[3][]const u8{ s0, s2, s3 }));
+    } else {
+        try faces.append(try readFace2(&[3][]const u8{ s0, s1, s2 }));
+    }
 }
 
 // TODO: Check for out of bounds.
 
-pub fn load(path: []const u8, gpa: Allocator) !Mesh {
+pub fn loadFromFile(path: []const u8, gpa: Allocator) !Mesh {
     const file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
 
@@ -76,8 +79,17 @@ pub fn load(path: []const u8, gpa: Allocator) !Mesh {
     var normals = ArrayList(Vector3).init(gpa);
     var faces = ArrayList(Face).init(gpa);
 
+    errdefer vertices.deinit();
+    errdefer textureCoords.deinit();
+    errdefer normals.deinit();
+    errdefer faces.deinit();
+
     while (try reader.readUntilDelimiterOrEofAlloc(gpa, '\n', 8192)) |line| {
         defer gpa.free(line);
+
+        if (line.len >= 1 and line[0] == '#') {
+            continue;
+        }
 
         if (line.len >= 2 and std.mem.eql(u8, line[0..2], "v ")) {
             var iter = std.mem.splitAny(u8, line[2..], " ");

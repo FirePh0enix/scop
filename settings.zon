@@ -1,0 +1,5 @@
+.{
+    .rotation_speed = 0.02,
+    .model_y = -1.0,
+    .model_z = -4.0,
+}
