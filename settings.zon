@@ -1,5 +1,8 @@
 .{
+    .enable_rotation = false,
     .rotation_speed = 0.02,
+    .render_mode = .color,
     .model_y = -1.0,
-    .model_z = -4.0,
+    .model_z = -6.0,
+    .fov = 60.0,
 }

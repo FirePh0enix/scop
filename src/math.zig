@@ -169,7 +169,7 @@ pub const Matrix4 = struct {
     }
 
     pub fn model(t: Vector3, r: Vector3) Matrix4 {
-        return translation(t).mulMat4(rotation(r));
+        return translation(t).mul(rotation(r));
     }
 
     fn rotationXInternal(c: f32, s: f32) Matrix4 {

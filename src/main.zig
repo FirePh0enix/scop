@@ -20,13 +20,18 @@ var rotation_y: f32 = 0.0;
 var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
 
 const Settings = struct {
+    enable_rotation: bool = true,
+    render_mode: Graphics.Mode = .texture,
     rotation_speed: f32 = 0.01,
     model_y: f32 = 1.0,
     model_z: f32 = -4.0,
+    fov: f32 = 60.0,
 };
 
 var settings: Settings = .{};
-var rotation_enabled: bool = true;
+
+var last_update: i64 = 0;
+const time_between_frame = 1_000_000 / 60;
 
 pub fn main() !void {
     const allocator = gpa.allocator();
@@ -60,10 +65,13 @@ pub fn main() !void {
         std.log.err("unable to open mesh file: {s}", .{mesh_filename});
         return;
     };
+    defer mesh.deinit();
+
     texture = Texture.loadFromFile(texture_filename, allocator) catch {
-        std.log.err("unable to open texture file: {s}", .{mesh_filename});
+        std.log.err("unable to open texture file: {s}", .{texture_filename});
         return;
     };
+    defer texture.deinit();
 
     const mlx_ptr = mlx.mlx_init() orelse std.debug.panic("unable to initialize mlx", .{});
     defer _ = mlx.mlx_destroy_display(mlx_ptr);
@@ -74,16 +82,17 @@ pub fn main() !void {
     const stderr = std.io.getStdOut().writer();
     nosuspend try stderr.print(
         \\
-        \\F1 - Enable textured rendering
-        \\F2 - Enable colored rendering
-        \\F3 - Toggle rotation
+        \\F1    - Toggle rendering mode
+        \\Space - Toggle rotation
+        \\
         \\
     , .{});
 
     gfx = Graphics.init(mlx_ptr, win_ptr, window_width, window_height) catch std.debug.panic("unable to enable graphics", .{});
+    gfx.render_mode = settings.render_mode;
 
     const view = Matrix4.translation(.{ .x = 0.0, .y = 0.0, .z = 0.0 });
-    const proj = Matrix4.projection(70.0, window_width, window_height, 0.01, 1000.0);
+    const proj = Matrix4.projection(settings.fov, window_width, window_height, 0.001, 1000.0);
 
     gfx.loadViewMatrix(view);
     gfx.loadProjectionMatrix(proj);
@@ -95,6 +104,15 @@ pub fn main() !void {
 }
 
 fn tick(_: ?*anyopaque) callconv(.c) void {
+    // Limit frame per seconds.
+    // TODO: Find a better way, for example waiting for a v-blank or else the CPU will be busy !
+    const current_time = std.time.microTimestamp();
+
+    if (current_time - last_update < time_between_frame) {
+        return;
+    }
+    last_update = current_time;
+
     const model = Matrix4.model(.{ .x = 0.0, .y = settings.model_y, .z = settings.model_z }, .{ .x = 0.0, .y = rotation_y, .z = 0.0 });
     gfx.loadModelMatrix(model);
 
@@ -102,7 +120,7 @@ fn tick(_: ?*anyopaque) callconv(.c) void {
     gfx.draw(&mesh, &texture);
     gfx.present();
 
-    if (rotation_enabled) {
+    if (settings.enable_rotation) {
         rotation_y += settings.rotation_speed;
     }
 }
@@ -113,10 +131,12 @@ fn onDestroyNotify(_: ?*anyopaque) callconv(.c) void {
 
 fn onKeyPress(keycode: c_int, _: ?*anyopaque) callconv(.c) void {
     if (keycode == mlx.XK_F1) {
-        gfx.render_mode = .texture;
-    } else if (keycode == mlx.XK_F2) {
-        gfx.render_mode = .color;
-    } else if (keycode == mlx.XK_F3) {
-        rotation_enabled = !rotation_enabled;
+        if (gfx.render_mode == .color) {
+            gfx.render_mode = .texture;
+        } else {
+            gfx.render_mode = .color;
+        }
+    } else if (keycode == mlx.XK_space) {
+        settings.enable_rotation = !settings.enable_rotation;
     }
 }

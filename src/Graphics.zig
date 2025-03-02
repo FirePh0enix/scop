@@ -27,8 +27,8 @@ pub const MlxImg = extern struct {
 };
 
 pub const Color = packed struct(u32) {
-    // the transparency component. Note that the value is reversed from the alpha component, meaning `0xff` is fully
-    // transparent.
+    /// The transparency component.
+    /// Note that the value is reversed from the alpha component, meaning `0xff` is fully transparent.
     b: u8,
     g: u8,
     r: u8,
@@ -48,6 +48,20 @@ pub const Color = packed struct(u32) {
             .t = (1.0 - v.w) * 255.0,
         };
     }
+
+    pub fn gray(v: u8) Color {
+        return .{
+            .r = v,
+            .g = v,
+            .b = v,
+            .t = 0,
+        };
+    }
+};
+
+pub const Mode = enum {
+    color,
+    texture,
 };
 
 mlx_ptr: ?*anyopaque,
@@ -107,7 +121,7 @@ pub fn resize(self: *Graphics, w: i32, h: i32) !void {
     _ = w;
     _ = h;
 
-    // recreate canvas, reallocate depth_buffer, ...
+    // TODO: recreate canvas, reallocate depth_buffer, ...
 }
 
 pub fn present(self: *const Graphics) void {
@@ -196,7 +210,7 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, texture: *const Texture) v
     const width: f32 = @floatFromInt(self.width);
     const height: f32 = @floatFromInt(self.height);
 
-    for (mesh.faces.items) |face| {
+    for (mesh.faces.items, 0..mesh.faces.items.len) |face, face_index| {
         var v0 = mesh.vertices.items[face.vertices[0]];
         var v1 = mesh.vertices.items[face.vertices[1]];
         var v2 = mesh.vertices.items[face.vertices[2]];
@@ -250,7 +264,6 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, texture: *const Texture) v
         var max_y: isize = @intFromFloat(@max(v0.y, v1.y, v2.y));
 
         // The triangle is outside of the screen.
-        // TODO This check could probably be sooner. (maybe before NDC to screen space)
         if (min_x >= self.width or min_y >= self.height or max_x < 0 or max_y < 0)
             return;
 
@@ -301,16 +314,21 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, texture: *const Texture) v
                 if (rev_z > self.depth_buffer[index])
                     continue;
 
-                self.color_buffer[index] = fragmentShader(self.render_mode, uv, n, texture);
+                self.color_buffer[index] = fragmentShader(self.render_mode, uv, n, texture, face_index);
                 self.depth_buffer[index] = rev_z;
             }
         }
     }
 }
 
-const Mode = enum {
-    color,
-    texture,
+const colors: [7]Color = .{
+    Color.gray(30),
+    Color.gray(74),
+    Color.gray(105),
+    Color.gray(122),
+    Color.gray(148),
+    Color.gray(172),
+    Color.gray(182),
 };
 
 inline fn fragmentShader(
@@ -318,12 +336,15 @@ inline fn fragmentShader(
     uv: Vector2,
     normal: Vector3,
     texture: *const Texture,
+    index: usize,
 ) Color {
     _ = normal;
 
     const color = switch (mode) {
         .texture => texture.sample(uv),
-        .color => Color.white,
+        .color => a: {
+            break :a colors[index % colors.len];
+        },
     };
 
     return color;
