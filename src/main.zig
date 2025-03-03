@@ -23,9 +23,11 @@ const Settings = struct {
     enable_rotation: bool = true,
     render_mode: Graphics.Mode = .texture,
     rotation_speed: f32 = 0.01,
+    model_x: f32 = 0.0,
     model_y: f32 = 1.0,
     model_z: f32 = -4.0,
     fov: f32 = 60.0,
+    move_speed: f32 = 0.2,
 };
 
 var settings: Settings = .{};
@@ -82,9 +84,11 @@ pub fn main() !void {
     const stderr = std.io.getStdOut().writer();
     nosuspend try stderr.print(
         \\
-        \\F1    - Toggle rendering mode
-        \\Space - Toggle rotation
-        \\
+        \\F1           - Toggle rendering mode
+        \\Space        - Toggle rotation
+        \\Up / Down    - Move the object on the Y axis
+        \\Left / Right - Move the object on the X axis
+        \\Shift / Ctrl - Move the object on the Z axis
         \\
     , .{});
 
@@ -113,7 +117,7 @@ fn tick(_: ?*anyopaque) callconv(.c) void {
     }
     last_update = current_time;
 
-    const model = Matrix4.model(.{ .x = 0.0, .y = settings.model_y, .z = settings.model_z }, .{ .x = 0.0, .y = rotation_y, .z = 0.0 });
+    const model = Matrix4.model(.{ .x = settings.model_x, .y = settings.model_y, .z = settings.model_z }, .{ .x = 0.0, .y = rotation_y, .z = 0.0 });
     gfx.loadModelMatrix(model);
 
     gfx.clear();
@@ -136,7 +140,21 @@ fn onKeyPress(keycode: c_int, _: ?*anyopaque) callconv(.c) void {
         } else {
             gfx.render_mode = .color;
         }
-    } else if (keycode == mlx.XK_space) {
+    }
+
+    if (keycode == mlx.XK_space) {
         settings.enable_rotation = !settings.enable_rotation;
+    } else if (keycode == mlx.XK_Left) {
+        settings.model_x -= settings.move_speed;
+    } else if (keycode == mlx.XK_Right) {
+        settings.model_x += settings.move_speed;
+    } else if (keycode == mlx.XK_Up) {
+        settings.model_y += settings.move_speed;
+    } else if (keycode == mlx.XK_Down) {
+        settings.model_y -= settings.move_speed;
+    } else if (keycode == mlx.XK_Shift_L) {
+        settings.model_z -= settings.move_speed;
+    } else if (keycode == mlx.XK_Control_L) {
+        settings.model_z += settings.move_speed;
     }
 }

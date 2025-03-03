@@ -1,8 +1,10 @@
 .{
-    .enable_rotation = false,
-    .rotation_speed = 0.02,
-    .render_mode = .color,
+    .enable_rotation = true,
+    .rotation_speed = 0.1,
+    .render_mode = .texture,
+    .model_x = 0.0,
     .model_y = -1.0,
-    .model_z = -6.0,
+    .model_z = -8.0,
     .fov = 60.0,
+    .move_speed = 0.1,
 }
