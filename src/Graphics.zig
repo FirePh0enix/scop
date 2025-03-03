@@ -11,21 +11,6 @@ const Mesh = @import("Mesh.zig");
 const Texture = @import("Texture.zig");
 const Graphics = @This();
 
-/// Internal structure used by the MiniLibX to store images
-pub const MlxImg = extern struct {
-    image: [*c]c_int = @import("std").mem.zeroes([*c]c_int),
-    pix: c_ulong = @import("std").mem.zeroes(c_ulong),
-    gc: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
-    size_line: c_int = @import("std").mem.zeroes(c_int),
-    bpp: c_int = @import("std").mem.zeroes(c_int),
-    width: c_int = @import("std").mem.zeroes(c_int),
-    height: c_int = @import("std").mem.zeroes(c_int),
-    type: c_int = @import("std").mem.zeroes(c_int),
-    format: c_int = @import("std").mem.zeroes(c_int),
-    data: [*c]u8 = @import("std").mem.zeroes([*c]u8),
-    // shm: XShmSegmentInfo = @import("std").mem.zeroes(XShmSegmentInfo),
-};
-
 pub const Color = packed struct(u32) {
     /// The transparency component.
     /// Note that the value is reversed from the alpha component, meaning `0xff` is fully transparent.
@@ -68,7 +53,7 @@ mlx_ptr: ?*anyopaque,
 win_ptr: ?*anyopaque,
 
 // The MiniLibX image used as a buffer.
-canvas: ?*MlxImg,
+canvas: ?*mlx.t_img,
 
 width: usize,
 height: usize,
@@ -94,10 +79,9 @@ pub fn init(
     win_ptr: ?*anyopaque,
     w: usize,
     h: usize,
+    allocator: Allocator,
 ) !Graphics {
-    const img: ?*MlxImg = @ptrCast(@alignCast(mlx.mlx_new_image(mlx_ptr, @intCast(w), @intCast(h))));
-    // TODO: page_allocator is the worst allocator and should be replaced by something better.
-    const allocator: Allocator = std.heap.page_allocator;
+    const img: ?*mlx.t_img = @ptrCast(@alignCast(mlx.mlx_new_image(mlx_ptr, @intCast(w), @intCast(h))));
 
     return Graphics{
         .mlx_ptr = mlx_ptr,
@@ -206,7 +190,7 @@ inline fn interpolateScalar(v0: Vector3, v1: Vector3, v2: Vector3, w: Vector3, z
     return (w.x * v0.x + w.y * v1.x + w.z * v2.x) * z;
 }
 
-pub fn draw(self: *const Graphics, mesh: *const Mesh, texture: *const Texture) void {
+pub fn draw(self: *const Graphics, mesh: *const Mesh, texture: ?Texture) void {
     const width: f32 = @floatFromInt(self.width);
     const height: f32 = @floatFromInt(self.height);
 
@@ -245,7 +229,7 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, texture: *const Texture) v
         // FIXME:
         // This fix the depth buffer bug. There is still a performance hit when the camera enters a mesh.
         if (v0.z < 0.1 or v1.z < 0.1 or v2.z < 0.1) {
-            return;
+            continue;
         }
 
         // Convert from screen space to NDC then raster (in one go)
@@ -265,7 +249,7 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, texture: *const Texture) v
 
         // The triangle is outside of the screen.
         if (min_x >= self.width or min_y >= self.height or max_x < 0 or max_y < 0)
-            return;
+            continue;
 
         min_x = @max(min_x, 0);
         min_y = @max(min_y, 0);
@@ -323,25 +307,26 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, texture: *const Texture) v
 
 const colors: [7]Color = .{
     Color.gray(30),
-    Color.gray(74),
-    Color.gray(105),
-    Color.gray(122),
-    Color.gray(148),
-    Color.gray(172),
-    Color.gray(182),
+    Color.gray(54),
+    Color.gray(70),
+    Color.gray(84),
+    Color.gray(102),
+    Color.gray(127),
+    Color.gray(140),
 };
 
 inline fn fragmentShader(
     mode: Mode,
     uv: Vector2,
     normal: Vector3,
-    texture: *const Texture,
+    texture: ?Texture,
     index: usize,
 ) Color {
-    _ = normal;
-
     const color = switch (mode) {
-        .texture => texture.sample(uv),
+        .texture => if (texture) |t|
+            t.sample(uv)
+        else
+            fragmentShader(.color, uv, normal, texture, index),
         .color => a: {
             break :a colors[index % colors.len];
         },

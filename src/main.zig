@@ -10,7 +10,7 @@ const Matrix4 = math.Matrix4;
 
 var gfx: Graphics = undefined;
 var mesh: Mesh = undefined;
-var texture: Texture = undefined;
+var texture: ?Texture = null;
 
 const window_width: i32 = 1280;
 const window_height: i32 = 720;
@@ -58,10 +58,7 @@ pub fn main() !void {
         std.log.err("missing mesh file", .{});
         return;
     };
-    const texture_filename = args.next() orelse {
-        std.log.err("missing texture file", .{});
-        return;
-    };
+    const texture_filename = args.next();
 
     mesh = Mesh.loadFromFile(mesh_filename, allocator) catch {
         std.log.err("unable to open mesh file: {s}", .{mesh_filename});
@@ -69,11 +66,13 @@ pub fn main() !void {
     };
     defer mesh.deinit();
 
-    texture = Texture.loadFromFile(texture_filename, allocator) catch {
-        std.log.err("unable to open texture file: {s}", .{texture_filename});
-        return;
-    };
-    defer texture.deinit();
+    if (texture_filename) |texture_filename2| {
+        texture = Texture.loadFromFile(texture_filename2, allocator) catch {
+            std.log.err("unable to open texture file: {s}", .{texture_filename2});
+            return;
+        };
+    }
+    defer if (texture) |t| t.deinit();
 
     const mlx_ptr = mlx.mlx_init() orelse std.debug.panic("unable to initialize mlx", .{});
     defer _ = mlx.mlx_destroy_display(mlx_ptr);
@@ -90,9 +89,10 @@ pub fn main() !void {
         \\Left / Right - Move the object on the X axis
         \\Shift / Ctrl - Move the object on the Z axis
         \\
+        \\
     , .{});
 
-    gfx = Graphics.init(mlx_ptr, win_ptr, window_width, window_height) catch std.debug.panic("unable to enable graphics", .{});
+    gfx = Graphics.init(mlx_ptr, win_ptr, window_width, window_height, allocator) catch std.debug.panic("unable to enable graphics", .{});
     gfx.render_mode = settings.render_mode;
 
     const view = Matrix4.translation(.{ .x = 0.0, .y = 0.0, .z = 0.0 });
@@ -121,7 +121,7 @@ fn tick(_: ?*anyopaque) callconv(.c) void {
     gfx.loadModelMatrix(model);
 
     gfx.clear();
-    gfx.draw(&mesh, &texture);
+    gfx.draw(&mesh, texture);
     gfx.present();
 
     if (settings.enable_rotation) {
