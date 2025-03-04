@@ -57,6 +57,14 @@ pub const Vector3 = struct {
         return .{ .x = v[0], .y = v[1], .z = v[2] };
     }
 
+    pub inline fn inverse(self: *const Vector3) Vector3 {
+        return Vector3{
+            .x = -self.x,
+            .y = -self.y,
+            .z = -self.z,
+        };
+    }
+
     pub inline fn add(self: *const Vector3, rhs: Vector3) Vector3 {
         return fromSimd(self.toSimd() + rhs.toSimd());
     }
@@ -66,7 +74,11 @@ pub const Vector3 = struct {
     }
 
     pub inline fn scale(self: *const Vector3, scalar: f32) Vector3 {
-        return fromSimd(self.toSimd() * scalar);
+        return .{
+            .x = self.x * scalar,
+            .y = self.y * scalar,
+            .z = self.z * scalar,
+        };
     }
 
     pub inline fn cross(self: *const Vector3, rhs: Vector3) Vector3 {
@@ -170,6 +182,10 @@ pub const Matrix4 = struct {
 
     pub fn model(t: Vector3, r: Vector3) Matrix4 {
         return translation(t).mul(rotation(r));
+    }
+
+    pub fn modelWithOffset(t: Vector3, r: Vector3, o: Vector3) Matrix4 {
+        return translation(t).mul(rotation(r).mul(translation(o.inverse())));
     }
 
     fn rotationXInternal(c: f32, s: f32) Matrix4 {

@@ -134,6 +134,50 @@ pub fn loadFromFile(path: []const u8, gpa: Allocator) !Mesh {
     };
 }
 
+pub const Box = struct {
+    min: Vector3,
+    max: Vector3,
+};
+
+pub fn getBounds(self: *const Mesh) Box {
+    if (self.vertices.items.len == 0) {
+        return .{ .min = .{}, .max = .{} };
+    }
+
+    var min = self.vertices.items[0];
+    var max = self.vertices.items[0];
+
+    for (self.vertices.items) |vertex| {
+        if (vertex.x < min.x) {
+            min.x = vertex.x;
+        }
+        if (vertex.x > max.x) {
+            max.x = vertex.x;
+        }
+
+        if (vertex.y < min.y) {
+            min.y = vertex.y;
+        }
+        if (vertex.y > max.y) {
+            max.y = vertex.y;
+        }
+
+        if (vertex.z < min.z) {
+            min.z = vertex.z;
+        }
+        if (vertex.z > max.z) {
+            max.z = vertex.z;
+        }
+    }
+
+    return Box{ .min = min, .max = max };
+}
+
+pub fn getMiddlePoint(self: *const Mesh) Vector3 {
+    const bounds = self.getBounds();
+    return bounds.max.sub(bounds.min).scale(0.5);
+}
+
 pub fn deinit(self: *const Mesh) void {
     self.vertices.deinit();
     self.textureCoords.deinit();

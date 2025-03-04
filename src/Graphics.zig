@@ -126,17 +126,17 @@ fn recalculateMVP(self: *Graphics) void {
 
 pub fn loadModelMatrix(self: *Graphics, m: Matrix4) void {
     self.model = m;
-    self.recalculateMVP();
+    // self.recalculateMVP();
 }
 
 pub fn loadViewMatrix(self: *Graphics, m: Matrix4) void {
     self.view = m;
-    self.recalculateMVP();
+    // self.recalculateMVP();
 }
 
 pub fn loadProjectionMatrix(self: *Graphics, m: Matrix4) void {
     self.projection = m;
-    self.recalculateMVP();
+    // self.recalculateMVP();
 }
 
 inline fn edgeFn(a: Vector3, b: Vector3, c: Vector3) f32 {
@@ -190,9 +190,23 @@ inline fn interpolateScalar(v0: Vector3, v1: Vector3, v2: Vector3, w: Vector3, z
     return (w.x * v0.x + w.y * v1.x + w.z * v2.x) * z;
 }
 
-pub fn draw(self: *const Graphics, mesh: *const Mesh, texture: ?Texture) void {
+pub const DrawOptions = struct {
+    texture: ?Texture = null,
+    position: Vector3 = .{},
+    rotation: Vector3 = .{},
+    offset: Vector3 = .{},
+};
+
+pub fn draw(self: *const Graphics, mesh: *const Mesh, options: DrawOptions) void {
     const width: f32 = @floatFromInt(self.width);
     const height: f32 = @floatFromInt(self.height);
+
+    const off = Vector3{
+        .y = options.offset.y,
+        .z = options.offset.z,
+    };
+    const model = Matrix4.modelWithOffset(options.position, options.rotation, off);
+    const mvp = self.projection.mul(self.view).mul(model);
 
     for (mesh.faces.items, 0..mesh.faces.items.len) |face, face_index| {
         var v0 = mesh.vertices.items[face.vertices[0]];
@@ -208,10 +222,11 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, texture: ?Texture) void {
         var t2 = mesh.textureCoords.items[face.textures[2]];
 
         // TODO: compute normals if not present.
+        // TODO: compute texture coords if not present.
 
-        v0 = self.mvp.mulVector3(v0);
-        v1 = self.mvp.mulVector3(v1);
-        v2 = self.mvp.mulVector3(v2);
+        v0 = mvp.mul(v0);
+        v1 = mvp.mul(v1);
+        v2 = mvp.mul(v2);
 
         const edge1 = v1.sub(v0).normalized();
         const edge2 = v2.sub(v1).normalized();
@@ -222,9 +237,9 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, texture: ?Texture) void {
             continue;
         }
 
-        n0 = self.model.mulVector3(n0);
-        n1 = self.model.mulVector3(n1);
-        n2 = self.model.mulVector3(n2);
+        n0 = self.model.mul(n0);
+        n1 = self.model.mul(n1);
+        n2 = self.model.mul(n2);
 
         // FIXME:
         // This fix the depth buffer bug. There is still a performance hit when the camera enters a mesh.
@@ -298,7 +313,7 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, texture: ?Texture) void {
                 if (rev_z > self.depth_buffer[index])
                     continue;
 
-                self.color_buffer[index] = fragmentShader(self.render_mode, uv, n, texture, face_index);
+                self.color_buffer[index] = fragmentShader(self.render_mode, uv, n, options.texture, face_index);
                 self.depth_buffer[index] = rev_z;
             }
         }

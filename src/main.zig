@@ -101,6 +101,9 @@ pub fn main() !void {
     gfx.loadViewMatrix(view);
     gfx.loadProjectionMatrix(proj);
 
+    std.debug.print("{}\n", .{mesh.getBounds()});
+    std.debug.print("{}\n", .{mesh.getMiddlePoint()});
+
     _ = mlx.mlx_hook(win_ptr, mlx.DestroyNotify, 0, @ptrCast(&onDestroyNotify), null);
     _ = mlx.mlx_hook(win_ptr, mlx.KeyPress, mlx.KeyPressMask, @ptrCast(&onKeyPress), null);
     _ = mlx.mlx_loop_hook(mlx_ptr, @ptrCast(&tick), null);
@@ -117,11 +120,16 @@ fn tick(_: ?*anyopaque) callconv(.c) void {
     }
     last_update = current_time;
 
-    const model = Matrix4.model(.{ .x = settings.model_x, .y = settings.model_y, .z = settings.model_z }, .{ .x = 0.0, .y = rotation_y, .z = 0.0 });
-    gfx.loadModelMatrix(model);
+    // const model = Matrix4.model(.{ .x = settings.model_x, .y = settings.model_y, .z = settings.model_z }, .{ .x = 0.0, .y = rotation_y, .z = 0.0 });
+    // gfx.loadModelMatrix(model);
 
     gfx.clear();
-    gfx.draw(&mesh, texture);
+    gfx.draw(&mesh, .{
+        .texture = texture,
+        .position = .{ .x = settings.model_x, .y = settings.model_y, .z = settings.model_z },
+        .rotation = .{ .y = rotation_y },
+        .offset = mesh.getMiddlePoint(),
+    });
     gfx.present();
 
     if (settings.enable_rotation) {
