@@ -101,9 +101,6 @@ pub fn main() !void {
     gfx.loadViewMatrix(view);
     gfx.loadProjectionMatrix(proj);
 
-    std.debug.print("{}\n", .{mesh.getBounds()});
-    std.debug.print("{}\n", .{mesh.getMiddlePoint()});
-
     _ = mlx.mlx_hook(win_ptr, mlx.DestroyNotify, 0, @ptrCast(&onDestroyNotify), null);
     _ = mlx.mlx_hook(win_ptr, mlx.KeyPress, mlx.KeyPressMask, @ptrCast(&onKeyPress), null);
     _ = mlx.mlx_loop_hook(mlx_ptr, @ptrCast(&tick), null);

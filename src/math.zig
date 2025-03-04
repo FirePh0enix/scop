@@ -65,6 +65,13 @@ pub const Vector3 = struct {
         };
     }
 
+    pub inline fn yz(self: *const Vector3) Vector2 {
+        return .{
+            .x = self.y,
+            .y = self.z,
+        };
+    }
+
     pub inline fn add(self: *const Vector3, rhs: Vector3) Vector3 {
         return fromSimd(self.toSimd() + rhs.toSimd());
     }

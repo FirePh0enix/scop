@@ -163,11 +163,18 @@ pub fn deinit(self: *const Texture) void {
     self.buffer.deinit();
 }
 
-pub inline fn sample(self: *const Texture, uv: Vector2) Color {
+pub const SampleOptions = struct {
+    repeat: bool = false,
+};
+
+pub inline fn sample(self: *const Texture, uv: Vector2, options: SampleOptions) Color {
     @setRuntimeSafety(false);
 
-    const x: usize = std.math.clamp(@as(usize, @intFromFloat(uv.x * @as(f32, @floatFromInt(self.width - 1)))), 0, self.width - 1);
-    const y: usize = std.math.clamp(self.height - 1 - @as(usize, @intFromFloat(uv.y * @as(f32, @floatFromInt(self.height - 1)))), 0, self.height - 1);
+    const uv_x: f32 = if (options.repeat) std.math.mod(f32, uv.x, 1.0) catch 0.0 else std.math.clamp(uv.x, 0.0, 1.0);
+    const uv_y: f32 = if (options.repeat) std.math.mod(f32, uv.y, 1.0) catch 0.0 else std.math.clamp(uv.y, 0.0, 1.0);
+
+    const x: usize = std.math.clamp(@as(usize, @intFromFloat(uv_x * @as(f32, @floatFromInt(self.width - 1)))), 0, self.width - 1);
+    const y: usize = std.math.clamp(self.height - 1 - @as(usize, @intFromFloat(uv_y * @as(f32, @floatFromInt(self.height - 1)))), 0, self.height - 1);
 
     return self.buffer.items[x + y * self.width];
 }

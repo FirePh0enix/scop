@@ -217,9 +217,19 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, options: DrawOptions) void
         var n1 = mesh.normals.items[face.normals[1]];
         var n2 = mesh.normals.items[face.normals[2]];
 
-        var t0 = mesh.textureCoords.items[face.textures[0]];
-        var t1 = mesh.textureCoords.items[face.textures[1]];
-        var t2 = mesh.textureCoords.items[face.textures[2]];
+        var t0: Vector2 = undefined;
+        var t1: Vector2 = undefined;
+        var t2: Vector2 = undefined;
+
+        if (mesh.textureCoords.items.len > 1) {
+            t0 = mesh.textureCoords.items[face.textures[0]];
+            t1 = mesh.textureCoords.items[face.textures[1]];
+            t2 = mesh.textureCoords.items[face.textures[2]];
+        } else {
+            t0 = v0.yz();
+            t1 = v1.yz();
+            t2 = v2.yz();
+        }
 
         // TODO: compute normals if not present.
         // TODO: compute texture coords if not present.
@@ -339,7 +349,7 @@ inline fn fragmentShader(
 ) Color {
     const color = switch (mode) {
         .texture => if (texture) |t|
-            t.sample(uv)
+            t.sample(uv, .{ .repeat = true })
         else
             fragmentShader(.color, uv, normal, texture, index),
         .color => a: {
