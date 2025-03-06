@@ -4,7 +4,7 @@
     .render_mode = .texture,
     .model_x = 0.0,
     .model_y = 0.0,
-    .model_z = -8.0,
+    .model_z = -108.0,
     .fov = 60.0,
     .move_speed = 0.1,
 }

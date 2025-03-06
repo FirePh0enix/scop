@@ -47,6 +47,14 @@ pub const Vector3 = struct {
     pub const forward = Vector3{ .z = -1.0 };
     pub const backward = Vector3{ .z = 1.0 };
 
+    pub const x_axis = Vector3{ .x = 1.0 };
+    pub const y_axis = Vector3{ .y = 1.0 };
+    pub const z_axis = Vector3{ .z = 1.0 };
+
+    pub const inv_x_axis = Vector3{ .x = -1.0 };
+    pub const inv_y_axis = Vector3{ .y = -1.0 };
+    pub const inv_z_axis = Vector3{ .z = -1.0 };
+
     const SimdVec = @Vector(3, f32);
 
     inline fn toSimd(self: Vector3) SimdVec {
@@ -62,6 +70,13 @@ pub const Vector3 = struct {
             .x = -self.x,
             .y = -self.y,
             .z = -self.z,
+        };
+    }
+
+    pub inline fn xy(self: *const Vector3) Vector2 {
+        return .{
+            .x = self.x,
+            .y = self.y,
         };
     }
 

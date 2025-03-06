@@ -70,9 +70,13 @@ fn readFace(buf: []const u8, faces: *ArrayList(Face)) !void {
 
 pub fn loadFromFile(path: []const u8, gpa: Allocator) !Mesh {
     const file = try std.fs.cwd().openFile(path, .{});
-    defer file.close();
+    const file_data = try file.readToEndAlloc(gpa, 800_000_000);
+    defer gpa.free(file_data);
 
-    const reader = file.reader();
+    // Reading line by line is a bottleneck for large files! It's better to read the whole file then reading
+    // each lines, but it will take more memory.
+
+    file.close();
 
     var vertices = ArrayList(Vector3).init(gpa);
     var textureCoords = ArrayList(Vector2).init(gpa);
@@ -84,9 +88,9 @@ pub fn loadFromFile(path: []const u8, gpa: Allocator) !Mesh {
     errdefer normals.deinit();
     errdefer faces.deinit();
 
-    while (try reader.readUntilDelimiterOrEofAlloc(gpa, '\n', 8192)) |line| {
-        defer gpa.free(line);
+    var line_iter = std.mem.splitSequence(u8, file_data, "\n");
 
+    while (line_iter.next()) |line| {
         if (line.len >= 1 and line[0] == '#') {
             continue;
         }

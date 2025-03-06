@@ -92,7 +92,7 @@ pub fn main() !void {
         \\
     , .{});
 
-    gfx = Graphics.init(mlx_ptr, win_ptr, window_width, window_height, allocator) catch std.debug.panic("unable to enable graphics", .{});
+    gfx = Graphics.init(mlx_ptr, win_ptr, window_width, window_height, allocator) catch std.debug.panic("unable to initialize graphics", .{});
     gfx.render_mode = settings.render_mode;
 
     const view = Matrix4.translation(.{ .x = 0.0, .y = 0.0, .z = 0.0 });

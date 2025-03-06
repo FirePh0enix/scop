@@ -201,35 +201,18 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, options: DrawOptions) void
     const width: f32 = @floatFromInt(self.width);
     const height: f32 = @floatFromInt(self.height);
 
-    const off = Vector3{
-        .y = options.offset.y,
-        .z = options.offset.z,
-    };
-    const model = Matrix4.modelWithOffset(options.position, options.rotation, off);
+    // const off = Vector3{
+    //     .y = options.offset.y,
+    //     .z = options.offset.z,
+    // };
+    // const model = Matrix4.modelWithOffset(options.position, options.rotation, off);
+    const model = Matrix4.model(options.position, options.rotation);
     const mvp = self.projection.mul(self.view).mul(model);
 
     for (mesh.faces.items, 0..mesh.faces.items.len) |face, face_index| {
         var v0 = mesh.vertices.items[face.vertices[0]];
         var v1 = mesh.vertices.items[face.vertices[1]];
         var v2 = mesh.vertices.items[face.vertices[2]];
-
-        var n0 = mesh.normals.items[face.normals[0]];
-        var n1 = mesh.normals.items[face.normals[1]];
-        var n2 = mesh.normals.items[face.normals[2]];
-
-        var t0: Vector2 = undefined;
-        var t1: Vector2 = undefined;
-        var t2: Vector2 = undefined;
-
-        if (mesh.textureCoords.items.len > 1) {
-            t0 = mesh.textureCoords.items[face.textures[0]];
-            t1 = mesh.textureCoords.items[face.textures[1]];
-            t2 = mesh.textureCoords.items[face.textures[2]];
-        } else {
-            t0 = v0.yz();
-            t1 = v1.yz();
-            t2 = v2.yz();
-        }
 
         // TODO: compute normals if not present.
         // TODO: compute texture coords if not present.
@@ -245,6 +228,34 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, options: DrawOptions) void
         // Only draw front faces.
         if (face_normal.dot(Vector3{ .z = 1 }) < 0.0) {
             continue;
+        }
+
+        var n0 = mesh.normals.items[face.normals[0]];
+        var n1 = mesh.normals.items[face.normals[1]];
+        var n2 = mesh.normals.items[face.normals[2]];
+
+        var t0: Vector2 = undefined;
+        var t1: Vector2 = undefined;
+        var t2: Vector2 = undefined;
+
+        if (mesh.textureCoords.items.len > 1) {
+            t0 = mesh.textureCoords.items[face.textures[0]];
+            t1 = mesh.textureCoords.items[face.textures[1]];
+            t2 = mesh.textureCoords.items[face.textures[2]];
+        } else {
+            const pv0 = mesh.vertices.items[face.vertices[0]];
+            const pv1 = mesh.vertices.items[face.vertices[1]];
+            const pv2 = mesh.vertices.items[face.vertices[2]];
+
+            if (face_normal.dot(Vector3.z_axis) >= 0.0 or face_normal.dot(Vector3.inv_z_axis) >= 0.0) {
+                t0 = pv0.yz();
+                t1 = pv1.yz();
+                t2 = pv2.yz();
+            } else {
+                t0 = pv0.xy();
+                t1 = pv1.xy();
+                t2 = pv2.xy();
+            }
         }
 
         n0 = self.model.mul(n0);
@@ -273,8 +284,9 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, options: DrawOptions) void
         var max_y: isize = @intFromFloat(@max(v0.y, v1.y, v2.y));
 
         // The triangle is outside of the screen.
-        if (min_x >= self.width or min_y >= self.height or max_x < 0 or max_y < 0)
+        if (min_x >= self.width or min_y >= self.height or max_x < 0 or max_y < 0) {
             continue;
+        }
 
         min_x = @max(min_x, 0);
         min_y = @max(min_y, 0);
@@ -320,8 +332,9 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, options: DrawOptions) void
                 const index: usize = x + (self.height - y - 1) * self.width;
                 const rev_z = 1.0 - z;
 
-                if (rev_z > self.depth_buffer[index])
+                if (rev_z > self.depth_buffer[index]) {
                     continue;
+                }
 
                 self.color_buffer[index] = fragmentShader(self.render_mode, uv, n, options.texture, face_index);
                 self.depth_buffer[index] = rev_z;

@@ -27,12 +27,6 @@ const Tga = packed struct {
     pixel_type: u8,
 };
 
-// const ExtensionArea = packed struct {
-//     size: u16,
-//     author_name: [41:0]u8,
-//     author_comment: [324:0]u8,
-// };
-
 const max_file_size: usize = 100_000_000;
 
 fn readNoMap32(tga: *const Tga, buf: []const u8, gpa: Allocator) !ArrayList(Color) {
