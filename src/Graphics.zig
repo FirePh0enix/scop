@@ -25,12 +25,21 @@ pub const Color = packed struct(u32) {
     pub const blue = Color{ .r = 0x00, .g = 0xff, .b = 0x00, .t = 0x00 };
     pub const green = Color{ .r = 0x00, .g = 0x00, .b = 0xff, .t = 0x00 };
 
-    pub fn fromVector3(v: Vector4) Color {
+    pub fn fromVector4(v: Vector4) Color {
         return .{
-            .r = v.x * 255.0,
-            .g = v.y * 255.0,
-            .b = v.z * 255.0,
-            .t = (1.0 - v.w) * 255.0,
+            .r = @intFromFloat(v.x * 255.0),
+            .g = @intFromFloat(v.y * 255.0),
+            .b = @intFromFloat(v.z * 255.0),
+            .t = @intFromFloat((1.0 - v.w) * 255.0),
+        };
+    }
+
+    pub fn toVector4(c: Color) Vector4 {
+        return .{
+            .x = @as(f32, @floatFromInt(c.r)) / 255.0,
+            .y = @as(f32, @floatFromInt(c.g)) / 255.0,
+            .z = @as(f32, @floatFromInt(c.b)) / 255.0,
+            .w = @as(f32, @floatFromInt(255 - c.t)) / 255.0,
         };
     }
 
@@ -195,6 +204,7 @@ pub const DrawOptions = struct {
     position: Vector3 = .{},
     rotation: Vector3 = .{},
     offset: Vector3 = .{},
+    enable_lighting: bool = false,
 };
 
 pub fn draw(self: *const Graphics, mesh: *const Mesh, options: DrawOptions) void {
@@ -336,7 +346,7 @@ pub fn draw(self: *const Graphics, mesh: *const Mesh, options: DrawOptions) void
                     continue;
                 }
 
-                self.color_buffer[index] = fragmentShader(self.render_mode, uv, n, options.texture, face_index);
+                self.color_buffer[index] = fragmentShader(self.render_mode, uv, n, options.texture, face_index, options.enable_lighting);
                 self.depth_buffer[index] = rev_z;
             }
         }
@@ -359,16 +369,34 @@ inline fn fragmentShader(
     normal: Vector3,
     texture: ?Texture,
     index: usize,
+    enable_lighting: bool,
 ) Color {
     const color = switch (mode) {
         .texture => if (texture) |t|
             t.sample(uv, .{ .repeat = true })
         else
-            fragmentShader(.color, uv, normal, texture, index),
+            fragmentShader(.color, uv, normal, texture, index, enable_lighting),
         .color => a: {
             break :a colors[index % colors.len];
         },
     };
 
-    return color;
+    if (enable_lighting) {
+        //
+        // Lighting
+        //
+
+        const ambient_strength = 0.3;
+        const light_color = Color.white.toVector4();
+        const light_dir = Vector3{ .x = -1.0 };
+
+        const diffuse = light_color.scale(@max(normal.dot(light_dir), 0.0));
+        const ambient = light_color.scale(ambient_strength);
+
+        const result = diffuse.add(ambient).mul(color.toVector4());
+
+        return Color.fromVector4(result);
+    } else {
+        return color;
+    }
 }

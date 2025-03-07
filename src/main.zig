@@ -21,6 +21,7 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
 
 const Settings = struct {
     enable_rotation: bool = true,
+    enable_lighting: bool = true,
     render_mode: Graphics.Mode = .texture,
     rotation_speed: f32 = 0.01,
     model_x: f32 = 0.0,
@@ -66,6 +67,14 @@ pub fn main() !void {
     };
     defer mesh.deinit();
 
+    std.debug.print(
+        \\
+        \\Statistics for model '{s}':
+        \\- vertices  = {}
+        \\- triangles = {}
+        \\
+    , .{ mesh_filename, mesh.vertices.items.len, mesh.faces.items.len });
+
     if (texture_filename) |texture_filename2| {
         texture = Texture.loadFromFile(texture_filename2, allocator) catch {
             std.log.err("unable to open texture file: {s}", .{texture_filename2});
@@ -84,6 +93,7 @@ pub fn main() !void {
     nosuspend try stderr.print(
         \\
         \\F1           - Toggle rendering mode
+        \\F2           - Toggle lighting
         \\Space        - Toggle rotation
         \\Up / Down    - Move the object on the Y axis
         \\Left / Right - Move the object on the X axis
@@ -126,6 +136,7 @@ fn tick(_: ?*anyopaque) callconv(.c) void {
         .position = .{ .x = settings.model_x, .y = settings.model_y, .z = settings.model_z },
         .rotation = .{ .y = rotation_y },
         .offset = mesh.getMiddlePoint(),
+        .enable_lighting = settings.enable_lighting,
     });
     gfx.present();
 
@@ -145,6 +156,8 @@ fn onKeyPress(keycode: c_int, _: ?*anyopaque) callconv(.c) void {
         } else {
             gfx.render_mode = .color;
         }
+    } else if (keycode == mlx.XK_F2) {
+        settings.enable_lighting = !settings.enable_lighting;
     }
 
     if (keycode == mlx.XK_space) {

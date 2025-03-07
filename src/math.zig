@@ -148,6 +148,33 @@ pub const Vector4 = struct {
             .w = w,
         };
     }
+
+    pub inline fn add(self: *const Vector4, rhs: Vector4) Vector4 {
+        return .{
+            .x = self.x + rhs.x,
+            .y = self.y + rhs.y,
+            .z = self.z + rhs.z,
+            .w = self.w + rhs.w,
+        };
+    }
+
+    pub inline fn mul(self: *const Vector4, rhs: Vector4) Vector4 {
+        return .{
+            .x = self.x * rhs.x,
+            .y = self.y * rhs.y,
+            .z = self.z * rhs.z,
+            .w = self.w * rhs.w,
+        };
+    }
+
+    pub inline fn scale(self: *const Vector4, scalar: f32) Vector4 {
+        return .{
+            .x = self.x * scalar,
+            .y = self.y * scalar,
+            .z = self.z * scalar,
+            .w = self.w * scalar,
+        };
+    }
 };
 
 pub const Matrix4 = struct {
