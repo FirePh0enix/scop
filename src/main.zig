@@ -100,6 +100,7 @@ pub fn main() !void {
     nosuspend try stderr.print(
         \\
         \\F1           - Toggle rendering mode
+        \\F2           - Toggle lighting
         \\Space        - Toggle rotation
         \\Up / Down    - Move the object on the Y axis
         \\Left / Right - Move the object on the X axis

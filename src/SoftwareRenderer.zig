@@ -126,21 +126,21 @@ pub const Graphics = struct {
         pub const blue = Color{ .r = 0x00, .g = 0xff, .b = 0x00, .t = 0x00 };
         pub const green = Color{ .r = 0x00, .g = 0x00, .b = 0xff, .t = 0x00 };
 
-        pub fn fromVector3(v: Vector4) Color {
+        pub fn fromVector4(v: Vector4) Color {
             return .{
-                .r = v.x * 255.0,
-                .g = v.y * 255.0,
-                .b = v.z * 255.0,
-                .t = (1.0 - v.w) * 255.0,
+                .r = @intFromFloat(v.x * 255.0),
+                .g = @intFromFloat(v.y * 255.0),
+                .b = @intFromFloat(v.z * 255.0),
+                .t = @intFromFloat((1.0 - v.w) * 255.0),
             };
         }
 
-        pub fn gray(v: u8) Color {
+        pub fn toVector4(c: Color) Vector4 {
             return .{
-                .r = v,
-                .g = v,
-                .b = v,
-                .t = 0,
+                .x = @as(f32, @floatFromInt(c.r)) / 255.0,
+                .y = @as(f32, @floatFromInt(c.g)) / 255.0,
+                .z = @as(f32, @floatFromInt(c.b)) / 255.0,
+                .w = @as(f32, @floatFromInt(255 - c.t)) / 255.0,
             };
         }
     };

@@ -21,7 +21,12 @@ faces: ArrayList(Face),
 
 allocator: Allocator,
 
-fn readFace2(nums: []const []const u8) !Face {
+fn readFace2(
+    nums: []const []const u8,
+    num_vertex: usize,
+    num_normal: usize,
+    num_textures: usize,
+) !Face {
     var face: Face = undefined;
 
     for (nums, 0..3) |s, index| {
@@ -32,18 +37,21 @@ fn readFace2(nums: []const []const u8) !Face {
 
         // Indices start at 1 in .obj files.
         face.vertices[index] = try std.fmt.parseInt(u32, sv, 10) - 1;
+        if (face.vertices[index] > num_vertex) return error.InvalidVertexId;
 
         // TODO: setting value to 0 if not found is not ideal as it required `textureCoords` and `normals` to hold one dummy
         // element if empty.
 
         if (svt) |vt| {
             face.textures[index] = try std.fmt.parseInt(u32, vt, 10) - 1;
+            if (face.textures[index] > num_textures) return error.InvalidTextureCoordsId;
         } else {
             face.textures[index] = 0;
         }
 
         if (svn) |vn| {
             face.normals[index] = try std.fmt.parseInt(u32, vn, 10) - 1;
+            if (face.normals[index] > num_normal) return error.InvalidNormalId;
         } else {
             face.normals[index] = 0;
         }
@@ -52,17 +60,23 @@ fn readFace2(nums: []const []const u8) !Face {
     return face;
 }
 
-fn readFace(buf: []const u8, faces: *ArrayList(Face)) !void {
+fn readFace(
+    buf: []const u8,
+    faces: *ArrayList(Face),
+    num_vertex: usize,
+    num_normal: usize,
+    num_textures: usize,
+) !void {
     var splitIter = std.mem.splitAny(u8, buf, " ");
     const s0 = splitIter.next() orelse return error.InvalidLine;
     const s1 = splitIter.next() orelse return error.InvalidLine;
     const s2 = splitIter.next() orelse return error.InvalidLine;
 
     if (splitIter.next()) |s3| {
-        try faces.append(try readFace2(&[3][]const u8{ s0, s1, s2 }));
-        try faces.append(try readFace2(&[3][]const u8{ s0, s2, s3 }));
+        try faces.append(try readFace2(&[3][]const u8{ s0, s1, s2 }, num_vertex, num_normal, num_textures));
+        try faces.append(try readFace2(&[3][]const u8{ s0, s2, s3 }, num_vertex, num_normal, num_textures));
     } else {
-        try faces.append(try readFace2(&[3][]const u8{ s0, s1, s2 }));
+        try faces.append(try readFace2(&[3][]const u8{ s0, s1, s2 }, num_vertex, num_normal, num_textures));
     }
 }
 
@@ -117,7 +131,7 @@ pub fn loadFromFile(path: []const u8, gpa: Allocator) !Mesh {
             try textureCoords.append(Vector2{ .x = x, .y = y });
         } else if (line.len >= 2 and std.mem.eql(u8, line[0..2], "f ")) {
             // format is `f 0/0/0 1/1/1 2/2/2`
-            try readFace(line[2..], &faces);
+            try readFace(line[2..], &faces, vertices.items.len, normals.items.len, textureCoords.items.len);
         }
     }
 
