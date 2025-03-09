@@ -29,6 +29,11 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    exe.addCSourceFiles(.{
+        .files = &.{"glad/src/glad.c"},
+    });
+    exe.addIncludePath(b.path("glad/include"));
+
     // Make MLX headers available to Zig code.
     const translate_mlx = b.addTranslateC(.{
         .target = target,
@@ -38,6 +43,13 @@ pub fn build(b: *std.Build) void {
 
     exe.step.dependOn(&translate_mlx.step);
     exe.root_module.addImport("mlx", translate_mlx.addModule("mlx"));
+
+    const argzon_dep = b.dependency("argzon", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const argzon_mod = argzon_dep.module("argzon");
+    exe.root_module.addImport("argzon", argzon_mod);
 
     // Add dependencies of the MLX.
     exe.linkSystemLibrary("x11");

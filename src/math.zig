@@ -177,7 +177,7 @@ pub const Matrix4 = struct {
         };
     }
 
-    pub fn projection(fov: f32, w: u32, h: u32, near: f32, far: f32) Matrix4 {
+    pub fn projection(fov: f32, w: usize, h: usize, near: f32, far: f32) Matrix4 {
         const aspect_ratio = @as(f32, @floatFromInt(h)) / @as(f32, @floatFromInt(w));
         const fov_rad = 1.0 / tan(std.math.degreesToRadians(fov * 0.5));
 

@@ -3,7 +3,12 @@
     .version = "0.0.0",
     .fingerprint = 0xa03fa343d070caee,
     // .minimum_zig_version = "0.14.0",
-    .dependencies = .{},
+    .dependencies = .{
+        .argzon = .{
+            .url = "git+https://codeberg.org/tensorush/argzon.git#9dfd4be47a3b2d0de6c47aee7da2099b4b9ce7bd",
+            .hash = "argzon-0.2.0-Cl574iqcAQBzF88sAc1VCETycbU6Re8EjT24KY2K542G",
+        },
+    },
     .paths = .{
         "build.zig",
         "build.zig.zon",

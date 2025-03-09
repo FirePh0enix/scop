@@ -7,4 +7,6 @@
     .model_z = -108.0,
     .fov = 60.0,
     .move_speed = 0.1,
+    .window_width = 1280,
+    .window_height = 720,
 }

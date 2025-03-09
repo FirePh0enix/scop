@@ -3,9 +3,8 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const Vector2 = @import("math.zig").Vector2;
-const Graphics = @import("Graphics.zig");
 const Texture = @This();
-const Color = Graphics.Color;
+const Color = @import("SoftwareRenderer.zig").Graphics.Color;
 
 buffer: ArrayList(Color),
 width: usize,
