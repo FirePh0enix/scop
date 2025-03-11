@@ -12,7 +12,7 @@ const Vector3 = math.Vector3;
 const Matrix4 = math.Matrix4;
 const Settings = @import("Settings.zig");
 
-var gpa: std.heap.GeneralPurposeAllocator(.{}) = .init;
+var gpa: std.heap.DebugAllocator(.{}) = .init;
 
 // TODO: extract into `cli.zon` after:
 // https://github.com/ziglang/zig/pull/22907
@@ -113,7 +113,8 @@ pub fn main() !void {
         const renderer = SoftwareRenderer.init(allocator, settings, model, texture);
         try renderer.run();
     } else if (std.mem.eql(u8, renderer_name, "opengl")) {
-        unreachable; // not implemented yet
+        const renderer = OpenGLRenderer.init(allocator, settings, model, texture);
+        try renderer.run();
     } else {
         std.log.err("invalid renderer: {s}", .{renderer_name});
     }

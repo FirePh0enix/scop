@@ -2,7 +2,7 @@
     .name = .scop,
     .version = "0.0.0",
     .fingerprint = 0xa03fa343d070caee,
-    // .minimum_zig_version = "0.14.0",
+    .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .argzon = .{
             .url = "git+https://codeberg.org/tensorush/argzon.git#9dfd4be47a3b2d0de6c47aee7da2099b4b9ce7bd",

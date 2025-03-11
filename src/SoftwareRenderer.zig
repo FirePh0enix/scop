@@ -143,6 +143,15 @@ pub const Graphics = struct {
                 .w = @as(f32, @floatFromInt(255 - c.t)) / 255.0,
             };
         }
+
+        pub fn gray(v: u32) Color {
+            return .{
+                .r = v,
+                .g = v,
+                .b = v,
+                .t = 0,
+            };
+        }
     };
 
     mlx_ptr: ?*anyopaque,

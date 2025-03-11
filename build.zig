@@ -40,9 +40,11 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .root_source_file = b.path("c.h"),
     });
+    translate_mlx.addIncludePath(b.path("glad/include/"));
 
     exe.step.dependOn(&translate_mlx.step);
     exe.root_module.addImport("mlx", translate_mlx.addModule("mlx"));
+    exe.root_module.linkSystemLibrary("sdl3", .{});
 
     const argzon_dep = b.dependency("argzon", .{
         .target = target,
